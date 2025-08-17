@@ -1,0 +1,19 @@
+FROM drupal:11.2.3-php8.3-fpm
+
+# Install additional packages
+RUN apt-get update && apt-get install -y \
+    vim \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy pre-configured settings to a temporary location
+COPY drupal_settings/settings.php /var/www/docker_settings/settings.php
+COPY drupal_settings/entrypoint.sh /usr/local/bin/custom-entrypoint.sh
+RUN chmod +x /usr/local/bin/custom-entrypoint.sh
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Use our custom entrypoint
+ENTRYPOINT ["/usr/local/bin/custom-entrypoint.sh"]
+CMD ["php-fpm"]

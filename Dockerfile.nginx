@@ -1,0 +1,7 @@
+FROM nginx:latest
+
+# Install additional packages for debugging
+RUN apt-get update && apt-get install -y \
+    vim \
+    procps \
+    && rm -rf /var/lib/apt/lists/*

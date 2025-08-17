@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: drupal-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MARIADB_DATABASE}
+      MYSQL_USER: ${MARIADB_USER}
+      MYSQL_PASSWORD: ${MARIADB_PASSWORD}
+    volumes:
+      - drupal_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  drupal:
+    build:
+      context: .
+      dockerfile: Dockerfile.drupal
+    container_name: drupal-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - drupal_code:/var/www/html
+      - ./drupal_settings:/var/www/docker_settings
+    environment:
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: drupal-web
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT}:80"
+    volumes:
+      - drupal_code:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - drupal
+
+volumes:
+  drupal_db_data:
+  drupal_code:
